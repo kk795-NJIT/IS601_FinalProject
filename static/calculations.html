@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Calculations - Calculator App</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>My Calculations</h1>
+            <div class="user-info">
+                <span id="username-display"></span>
+                <span class="muted" id="last-login"></span>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </div>
+        </header>
+
+        <!-- Messages -->
+        <div id="message-container"></div>
+
+        <!-- Stats Overview -->
+        <section class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <p class="stat-label">Total Calculations</p>
+                    <p class="stat-value" id="stat-total">0</p>
+                </div>
+                <div class="stat-card">
+                    <p class="stat-label">Average Result</p>
+                    <p class="stat-value" id="stat-average">-</p>
+                </div>
+                <div class="stat-card">
+                    <p class="stat-label">Most Used Operation</p>
+                    <p class="stat-value" id="stat-most-used">-</p>
+                </div>
+                <div class="stat-card">
+                    <p class="stat-label">Last Result</p>
+                    <p class="stat-value" id="stat-last">-</p>
+                </div>
+            </div>
+            <div class="stat-breakdown" id="stat-breakdown"></div>
+        </section>
+
+        <!-- Profile Management -->
+        <section class="profile-section">
+            <div class="section-header">
+                <h2>Profile & Security</h2>
+                <span class="muted">Keep your account details up to date</span>
+            </div>
+            <div class="profile-grid">
+                <form id="profile-form" class="card">
+                    <h3>Profile</h3>
+                    <div class="form-group">
+                        <label for="profile-username">Username</label>
+                        <input type="text" id="profile-username" name="username" minlength="3" maxlength="50" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-email">Email</label>
+                        <input type="email" id="profile-email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-full-name">Full Name</label>
+                        <input type="text" id="profile-full-name" name="full_name" maxlength="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-bio">Bio</label>
+                        <input type="text" id="profile-bio" name="bio" maxlength="255">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Profile</button>
+                    </div>
+                </form>
+
+                <form id="password-form" class="card">
+                    <h3>Change Password</h3>
+                    <div class="form-group">
+                        <label for="current-password">Current Password</label>
+                        <input type="password" id="current-password" name="current_password" minlength="8" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">New Password</label>
+                        <input type="password" id="new-password" name="new_password" minlength="8" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-new-password">Confirm New Password</label>
+                        <input type="password" id="confirm-new-password" name="confirm_new_password" minlength="8" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-warning">Update Password</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Add New Calculation Form -->
+        <section class="calculation-form-section">
+            <h2>Add New Calculation</h2>
+            <form id="add-calculation-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="operand-a">First Operand (a):</label>
+                        <input type="number" id="operand-a" name="a" step="any" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="operation">Operation:</label>
+                        <select id="operation" name="type" required>
+                            <option value="Add">Add (+)</option>
+                            <option value="Subtract">Subtract (-)</option>
+                            <option value="Multiply">Multiply (×)</option>
+                            <option value="Divide">Divide (÷)</option>
+                            <option value="Power">Power (^)</option>
+                            <option value="Modulo">Modulo (%)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="operand-b">Second Operand (b):</label>
+                        <input type="number" id="operand-b" name="b" step="any" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Calculate & Save</button>
+            </form>
+        </section>
+
+        <!-- Calculations List -->
+        <section class="calculations-list-section">
+            <div class="section-header">
+                <h2>Your Calculation History</h2>
+                <button id="refresh-btn" class="btn btn-secondary">Refresh</button>
+            </div>
+            
+            <div id="calculations-container">
+                <p class="loading">Loading calculations...</p>
+            </div>
+        </section>
+
+        <!-- Edit Modal -->
+        <div id="edit-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Edit Calculation</h2>
+                <form id="edit-calculation-form">
+                    <input type="hidden" id="edit-calc-id">
+                    
+                    <div class="form-group">
+                        <label for="edit-operand-a">First Operand (a):</label>
+                        <input type="number" id="edit-operand-a" name="a" step="any" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-operation">Operation:</label>
+                        <select id="edit-operation" name="type" required>
+                            <option value="Add">Add (+)</option>
+                            <option value="Subtract">Subtract (-)</option>
+                            <option value="Multiply">Multiply (×)</option>
+                            <option value="Divide">Divide (÷)</option>
+                            <option value="Power">Power (^)</option>
+                            <option value="Modulo">Modulo (%)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-operand-b">Second Operand (b):</label>
+                        <input type="number" id="edit-operand-b" name="b" step="any" required>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Update Calculation</button>
+                        <button type="button" class="btn btn-secondary" id="cancel-edit-btn">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- View Details Modal -->
+        <div id="view-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Calculation Details</h2>
+                <div id="calculation-details">
+                    <!-- Details will be populated here -->
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="close-view-btn">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/calculations.js"></script>
+</body>
+</html>
