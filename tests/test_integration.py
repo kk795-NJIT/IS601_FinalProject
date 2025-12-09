@@ -1,0 +1,552 @@
+"""
+Integration tests for FastAPI application with real database.
+
+These tests use PostgreSQL for testing.
+"""
+import pytest
+import os
+import uuid
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from fastapi.testclient import TestClient
+
+from app.main import app, Base
+from app.database import get_db
+from app.models import User, Calculation
+from app.factory import CalculationFactory
+
+
+# Use PostgreSQL test database
+DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql://user:password@localhost:5433/secure_app_test")
+
+
+@pytest.fixture(scope="module")
+def setup_database():
+    """Create test database and tables."""
+    # Create engine for test database
+    engine = create_engine(DATABASE_URL)
+    
+    # Create all tables
+    Base.metadata.create_all(bind=engine)
+    
+    yield engine
+    
+    # Drop all tables after tests
+    Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture
+def db_session(setup_database):
+    """Provide a database session for each test."""
+    TestingSessionLocal = sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=setup_database
+    )
+    
+    db = TestingSessionLocal()
+    
+    # Clear all data before each test
+    for table in reversed(Base.metadata.sorted_tables):
+        db.execute(table.delete())
+    db.commit()
+    
+    yield db
+    
+    db.close()
+
+
+@pytest.fixture
+def client(db_session):
+    """Provide a test client with database dependency override."""
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+    
+    app.dependency_overrides[get_db] = override_get_db
+    
+    with TestClient(app) as test_client:
+        yield test_client
+    
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def auth_header(client):
+    """Create a user, log in, and return Authorization header for authenticated requests."""
+    unique = uuid.uuid4().hex
+    user_data = {
+        "username": f"user_{unique}",
+        "email": f"user_{unique}@example.com",
+        "password": "securepassword123"
+    }
+
+    # Register user (ignore if already exists in a rare collision)
+    client.post("/users/register", json=user_data)
+
+    login_data = {
+        "username": user_data["username"],
+        "password": user_data["password"],
+    }
+    login_response = client.post("/users/login", json=login_data)
+    assert login_response.status_code == 200
+    token = login_response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+class TestHealthEndpoint:
+    """Test health check endpoint."""
+    
+    def test_health_check(self, client):
+        """Test that health check endpoint returns 200."""
+        response = client.get("/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "healthy"
+
+
+class TestUserCreation:
+    """Test user creation endpoints and constraints."""
+    
+    def test_create_user_success(self, client):
+        """Test successful user creation."""
+        user_data = {
+            "username": "johndoe",
+            "email": "john@example.com",
+            "password": "securepassword123"
+        }
+        response = client.post("/users/register", json=user_data)
+        assert response.status_code == 201
+        data = response.json()
+        assert data["username"] == "johndoe"
+        assert data["email"] == "john@example.com"
+        assert "password" not in data
+        assert "password_hash" not in data
+        assert "id" in data
+        assert "created_at" in data
+    
+    def test_create_user_duplicate_username(self, client):
+        """Test that duplicate username is rejected."""
+        user_data = {
+            "username": "johndoe",
+            "email": "john@example.com",
+            "password": "securepassword123"
+        }
+        
+        # Create first user
+        response1 = client.post("/users/register", json=user_data)
+        assert response1.status_code == 201
+        
+        # Try to create second user with same username
+        user_data2 = {
+            "username": "johndoe",
+            "email": "john2@example.com",
+            "password": "securepassword456"
+        }
+        response2 = client.post("/users/register", json=user_data2)
+        assert response2.status_code == 409
+        assert "Username already exists" in response2.json()["detail"]
+    
+    def test_create_user_duplicate_email(self, client):
+        """Test that duplicate email is rejected."""
+        user_data = {
+            "username": "johndoe",
+            "email": "john@example.com",
+            "password": "securepassword123"
+        }
+        
+        # Create first user
+        response1 = client.post("/users/register", json=user_data)
+        assert response1.status_code == 201
+        
+        # Try to create second user with same email (and different username)
+        user_data2 = {
+            "username": "janedoe",
+            "email": "john@example.com",
+            "password": "securepassword456"
+        }
+        response2 = client.post("/users/register", json=user_data2)
+        assert response2.status_code == 409
+        # Check for either email or username conflict error
+        assert "already exists" in response2.json()["detail"]
+    
+    def test_create_user_invalid_email(self, client):
+        """Test that invalid email format is rejected."""
+        user_data = {
+            "username": "johndoe",
+            "email": "invalidemail",
+            "password": "securepassword123"
+        }
+        response = client.post("/users/register", json=user_data)
+        assert response.status_code == 422
+    
+    def test_create_user_short_password(self, client):
+        """Test that short password is rejected."""
+        user_data = {
+            "username": "johndoe",
+            "email": "john@example.com",
+            "password": "short"
+        }
+        response = client.post("/users/register", json=user_data)
+        assert response.status_code == 422
+    
+    def test_create_user_short_username(self, client):
+        """Test that short username is rejected."""
+        user_data = {
+            "username": "ab",
+            "email": "john@example.com",
+            "password": "securepassword123"
+        }
+        response = client.post("/users/register", json=user_data)
+        assert response.status_code == 422
+
+class TestUserLogin:
+    """Test user login endpoint."""
+
+    def test_login_success(self, client):
+        """Test successful login."""
+        # Create user
+        user_data = {
+            "username": "loginuser",
+            "email": "login@example.com",
+            "password": "securepassword123"
+        }
+        client.post("/users/register", json=user_data)
+
+        # Login
+        login_data = {
+            "username": "loginuser",
+            "password": "securepassword123"
+        }
+        response = client.post("/users/login", json=login_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+        assert "user_id" in data
+
+    def test_login_invalid_password(self, client):
+        """Test login with invalid password."""
+        # Create user
+        user_data = {
+            "username": "loginuser2",
+            "email": "login2@example.com",
+            "password": "securepassword123"
+        }
+        client.post("/users/register", json=user_data)
+
+        # Login with wrong password
+        login_data = {
+            "username": "loginuser2",
+            "password": "wrongpassword"
+        }
+        response = client.post("/users/login", json=login_data)
+        assert response.status_code == 401
+        assert "Invalid username or password" in response.json()["detail"]
+
+    def test_login_nonexistent_user(self, client):
+        """Test login with non-existent user."""
+        login_data = {
+            "username": "nonexistent",
+            "password": "password"
+        }
+        response = client.post("/users/login", json=login_data)
+        assert response.status_code == 401
+
+
+class TestProfileAndSecurity:
+    """Profile and security flows for authenticated users."""
+
+    def test_get_my_profile(self, client, auth_header):
+        response = client.get("/users/me", headers=auth_header)
+        assert response.status_code == 200
+        data = response.json()
+        assert "username" in data
+        assert "email" in data
+
+    def test_update_profile_me(self, client, auth_header):
+        payload = {"full_name": "Integration Tester", "bio": "Writes tests"}
+        response = client.put("/users/me", json=payload, headers=auth_header)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["full_name"] == "Integration Tester"
+        assert data["bio"] == "Writes tests"
+
+    def test_change_password_and_relogin(self, client, auth_header):
+        change_payload = {
+            "current_password": "securepassword123",
+            "new_password": "newsecurepassword456"
+        }
+        response = client.post("/users/change-password", json=change_payload, headers=auth_header)
+        assert response.status_code == 204
+
+        profile = client.get("/users/me", headers=auth_header).json()
+        username = profile["username"]
+
+        # Old password should fail
+        login_old = client.post("/users/login", json={"username": username, "password": "securepassword123"})
+        assert login_old.status_code == 401
+
+        # New password should work
+        login_new = client.post("/users/login", json={"username": username, "password": "newsecurepassword456"})
+        assert login_new.status_code == 200
+
+class TestUserRetrieval:
+    """Test user retrieval endpoints."""
+    
+    def test_list_users_empty(self, client):
+        """Test listing users when database is empty."""
+        response = client.get("/users")
+        assert response.status_code == 200
+        data = response.json()
+        assert data == []
+    
+    def test_list_users_with_pagination(self, client):
+        """Test listing users with pagination."""
+        # Create multiple users
+        for i in range(5):
+            user_data = {
+                "username": f"user{i}",
+                "email": f"user{i}@example.com",
+                "password": "securepassword123"
+            }
+            client.post("/users/register", json=user_data)
+        
+        # Get all users
+        response = client.get("/users?skip=0&limit=10")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 5
+        
+        # Get paginated users
+        response = client.get("/users?skip=0&limit=2")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 2
+    
+    def test_get_user_by_id(self, client):
+        """Test retrieving a specific user by ID."""
+        # Create a user
+        user_data = {
+            "username": "johndoe",
+            "email": "john@example.com",
+            "password": "securepassword123"
+        }
+        create_response = client.post("/users/register", json=user_data)
+        user_id = create_response.json()["id"]
+        
+        # Retrieve the user
+        response = client.get(f"/users/{user_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["username"] == "johndoe"
+        assert data["email"] == "john@example.com"
+    
+    def test_get_nonexistent_user(self, client):
+        """Test retrieving a non-existent user."""
+        response = client.get("/users/00000000-0000-0000-0000-000000000000")
+        assert response.status_code == 404
+        assert "User not found" in response.json()["detail"]
+
+
+class TestUserUpdate:
+    """Test user update endpoints."""
+    
+    def test_update_user_username(self, client):
+        """Test updating user username."""
+        # Create a user
+        user_data = {
+            "username": "johndoe",
+            "email": "john@example.com",
+            "password": "securepassword123"
+        }
+        create_response = client.post("/users/register", json=user_data)
+        user_id = create_response.json()["id"]
+        
+        # Update username
+        update_data = {"username": "newusername"}
+        response = client.put(f"/users/{user_id}", json=update_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["username"] == "newusername"
+        assert data["email"] == "john@example.com"
+    
+    def test_update_user_email(self, client):
+        """Test updating user email."""
+        # Create a user
+        user_data = {
+            "username": "johndoe",
+            "email": "john@example.com",
+            "password": "securepassword123"
+        }
+        create_response = client.post("/users/register", json=user_data)
+        user_id = create_response.json()["id"]
+        
+        # Update email
+        update_data = {"email": "newemail@example.com"}
+        response = client.put(f"/users/{user_id}", json=update_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["email"] == "newemail@example.com"
+    
+    def test_update_user_duplicate_username(self, client):
+        """Test updating with duplicate username is rejected."""
+        # Create two users
+        user_data1 = {
+            "username": "user1",
+            "email": "user1@example.com",
+            "password": "securepassword123"
+        }
+        user_data2 = {
+            "username": "user2",
+            "email": "user2@example.com",
+            "password": "securepassword123"
+        }
+        response1 = client.post("/users/register", json=user_data1)
+        response2 = client.post("/users/register", json=user_data2)
+        user_id2 = response2.json()["id"]
+        
+        # Try to update user2 with user1's username
+        update_data = {"username": "user1"}
+        response = client.put(f"/users/{user_id2}", json=update_data)
+        assert response.status_code == 409
+        assert "Username already exists" in response.json()["detail"]
+
+
+class TestUserDeletion:
+    """Test user deletion endpoints."""
+    
+    def test_delete_user(self, client):
+        """Test deleting a user."""
+        # Create a user
+        user_data = {
+            "username": "johndoe",
+            "email": "john@example.com",
+            "password": "securepassword123"
+        }
+        create_response = client.post("/users/register", json=user_data)
+        user_id = create_response.json()["id"]
+        
+        # Delete the user
+        response = client.delete(f"/users/{user_id}")
+        assert response.status_code == 204
+        
+        # Verify user is deleted
+        response = client.get(f"/users/{user_id}")
+        assert response.status_code == 404
+    
+    def test_delete_nonexistent_user(self, client):
+        """Test deleting a non-existent user."""
+        response = client.delete("/users/00000000-0000-0000-0000-000000000000")
+        assert response.status_code == 404
+        assert "User not found" in response.json()["detail"]
+
+class TestCalculationAPI:
+    """Test calculation API endpoints."""
+
+    def test_create_calculation(self, client, auth_header):
+        """Test creating a calculation."""
+        calc_data = {
+            "a": 10.0,
+            "b": 5.0,
+            "type": "Add"
+        }
+        response = client.post("/calculations", json=calc_data, headers=auth_header)
+        assert response.status_code == 201
+        data = response.json()
+        assert data["a"] == 10.0
+        assert data["b"] == 5.0
+        assert data["type"] == "Add"
+        assert data["result"] == 15.0
+        assert "id" in data
+
+    def test_create_calculation_divide_by_zero(self, client, auth_header):
+        """Test division by zero."""
+        calc_data = {
+            "a": 10.0,
+            "b": 0.0,
+            "type": "Divide"
+        }
+        response = client.post("/calculations", json=calc_data, headers=auth_header)
+        assert response.status_code == 422 # Pydantic validation error or 400 from logic
+
+    def test_get_calculation(self, client, auth_header):
+        """Test retrieving a calculation."""
+        calc_data = {
+            "a": 10.0,
+            "b": 5.0,
+            "type": "Add"
+        }
+        create_response = client.post("/calculations", json=calc_data, headers=auth_header)
+        calc_id = create_response.json()["id"]
+
+        response = client.get(f"/calculations/{calc_id}", headers=auth_header)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == calc_id
+        assert data["result"] == 15.0
+
+    def test_list_calculations(self, client, auth_header):
+        """Test listing calculations."""
+        client.post("/calculations", json={"a": 1.0, "b": 1.0, "type": "Add"}, headers=auth_header)
+        client.post("/calculations", json={"a": 2.0, "b": 2.0, "type": "Add"}, headers=auth_header)
+
+        response = client.get("/calculations", headers=auth_header)
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) >= 2
+
+    def test_update_calculation(self, client, auth_header):
+        """Test updating a calculation."""
+        calc_data = {
+            "a": 10.0,
+            "b": 5.0,
+            "type": "Add"
+        }
+        create_response = client.post("/calculations", json=calc_data, headers=auth_header)
+        calc_id = create_response.json()["id"]
+
+        update_data = {
+            "a": 20.0
+        }
+        response = client.put(f"/calculations/{calc_id}", json=update_data, headers=auth_header)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["a"] == 20.0
+        assert data["result"] == 25.0 # 20 + 5
+
+    def test_delete_calculation(self, client, auth_header):
+        """Test deleting a calculation."""
+        calc_data = {
+            "a": 10.0,
+            "b": 5.0,
+            "type": "Add"
+        }
+        create_response = client.post("/calculations", json=calc_data, headers=auth_header)
+        calc_id = create_response.json()["id"]
+
+        response = client.delete(f"/calculations/{calc_id}", headers=auth_header)
+        assert response.status_code == 204
+
+        response = client.get(f"/calculations/{calc_id}", headers=auth_header)
+        assert response.status_code == 404
+
+    def test_power_operation(self, client, auth_header):
+        """Ensure power operation works end-to-end."""
+        calc_data = {"a": 2.0, "b": 4.0, "type": "Power"}
+        response = client.post("/calculations", json=calc_data, headers=auth_header)
+        assert response.status_code == 201
+        assert response.json()["result"] == 16.0
+
+    def test_calculation_summary(self, client, auth_header):
+        """Verify summary endpoint aggregates user calculations."""
+        client.post("/calculations", json={"a": 10.0, "b": 5.0, "type": "Add"}, headers=auth_header)
+        client.post("/calculations", json={"a": 9.0, "b": 3.0, "type": "Modulo"}, headers=auth_header)
+        response = client.get("/calculations/summary", headers=auth_header)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] >= 2
+        assert data["operations_breakdown"]["Add"] >= 1
+        assert data["operations_breakdown"]["Modulo"] >= 1
