@@ -87,11 +87,18 @@ def get_first_calculation_id(page: Page):
     )
 
 
+def switch_to_calculations_tab(page: Page):
+    """Helper function to switch to Calculations tab."""
+    page.click('button[data-tab="calculations"]')
+    page.wait_for_selector("#add-calculation-form", timeout=5000)
+
+
 # ========== POSITIVE TEST SCENARIOS ==========
 
 def test_add_calculation_success(page: Page, authenticated_user):
     """Test successful creation of a new calculation."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
     
     # Fill in calculation form
     page.fill("#operand-a", "10")
@@ -114,6 +121,7 @@ def test_add_calculation_success(page: Page, authenticated_user):
 def test_browse_calculations(page: Page, authenticated_user):
     """Test browsing/listing all user calculations."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
     
     # Create multiple calculations
     calculations = [
@@ -139,6 +147,7 @@ def test_browse_calculations(page: Page, authenticated_user):
 def test_read_calculation_details(page: Page, authenticated_user):
     """Test viewing details of a specific calculation."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
     
     # Create a calculation
     page.fill("#operand-a", "25")
@@ -159,6 +168,7 @@ def test_read_calculation_details(page: Page, authenticated_user):
 def test_edit_calculation_success(page: Page, authenticated_user):
     """Test successfully editing an existing calculation via API."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
     
     # Create a calculation
     page.fill("#operand-a", "100")
@@ -197,6 +207,7 @@ def test_edit_calculation_success(page: Page, authenticated_user):
 def test_delete_calculation_success(page: Page, authenticated_user):
     """Test successfully deleting a calculation via API."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
     
     # Create two calculations
     page.fill("#operand-a", "10")
@@ -236,6 +247,7 @@ def test_delete_calculation_success(page: Page, authenticated_user):
 def test_multiple_operations(page: Page, authenticated_user):
     """Test all four arithmetic operations."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
     
     operations = [
         {"a": "10", "b": "5", "op": "Add", "result": "15"},
@@ -263,6 +275,7 @@ def test_multiple_operations(page: Page, authenticated_user):
 def test_power_operation_and_stats(page: Page, authenticated_user):
     """Test power operation and summary widgets update."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
 
     page.fill("#operand-a", "2")
     page.fill("#operand-b", "4")
@@ -281,6 +294,7 @@ def test_power_operation_and_stats(page: Page, authenticated_user):
 def test_add_calculation_division_by_zero(page: Page, authenticated_user):
     """Test that division by zero is prevented."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
     
     # Try to create division by zero
     page.fill("#operand-a", "10")
@@ -296,6 +310,7 @@ def test_add_calculation_division_by_zero(page: Page, authenticated_user):
 def test_edit_calculation_division_by_zero(page: Page, authenticated_user):
     """Test that editing to division by zero is prevented."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
     
     # Create a valid calculation
     page.fill("#operand-a", "10")
@@ -337,6 +352,7 @@ def test_calculations_require_authentication(page: Page):
 def test_invalid_numeric_inputs(page: Page, authenticated_user):
     """Test handling of invalid numeric inputs."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
     
     # Manually set a non-numeric value (fill fails on type=number)
     is_valid = page.eval_on_selector(
@@ -367,6 +383,7 @@ def test_user_isolation(page: Page):
     expect(page).to_have_url(f"{BASE_URL}/static/calculations.html", timeout=5000)
     
     # Create a calculation for user1
+    switch_to_calculations_tab(page)
     page.fill("#operand-a", "100")
     page.fill("#operand-b", "50")
     page.select_option("#operation", "Add")
@@ -408,6 +425,7 @@ def test_user_isolation(page: Page):
 def test_refresh_calculations(page: Page, authenticated_user):
     """Test the refresh button reloads calculations."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
     
     # Create a calculation
     page.fill("#operand-a", "7")
@@ -429,6 +447,7 @@ def test_refresh_calculations(page: Page, authenticated_user):
 def test_cancel_edit(page: Page, authenticated_user):
     """Test canceling an edit operation."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
     
     # Create a calculation
     page.fill("#operand-a", "15")
@@ -461,11 +480,16 @@ def test_cancel_edit(page: Page, authenticated_user):
 def test_profile_update_and_password_change(page: Page, authenticated_user):
     """Update profile and then change password via UI."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    page.click('button[data-tab="profile"]')
+    page.wait_for_selector("#profile-form", timeout=5000)
 
+    # Fill in required fields (username and email are required)
+    page.fill("#profile-username", authenticated_user["username"])
+    page.fill("#profile-email", f"{authenticated_user['username']}@example.com")
     page.fill("#profile-full-name", "E2E Tester")
     page.fill("#profile-bio", "Writes e2e scenarios")
     page.click("#profile-form button[type='submit']")
-    expect(page.locator(".message.success")).to_be_visible()
+    expect(page.locator(".message.success")).to_be_visible(timeout=8000)
 
     page.fill("#current-password", authenticated_user["password"])
     new_password = "newpassword1234"
@@ -480,6 +504,7 @@ def test_profile_update_and_password_change(page: Page, authenticated_user):
 def test_decimal_calculations(page: Page, authenticated_user):
     """Test calculations with decimal numbers."""
     page.goto(f"{BASE_URL}/static/calculations.html")
+    switch_to_calculations_tab(page)
     
     # Create calculation with decimals
     page.fill("#operand-a", "10.5")
