@@ -2,7 +2,7 @@
 
 A comprehensive, production-ready FastAPI application featuring secure user authentication, JWT-based authorization, comprehensive BREAD (Browse, Read, Edit, Add, Delete) functionality for calculations, advanced mathematical operations, and complete test coverage. Built with modern development practices including Docker containerization, CI/CD pipeline automation, and responsive SaaS-style UI.
 
-## 🎯 Project Overview
+## Project Overview
 
 This project implements a complete web application with:
 - **User Management**: Secure registration, login, profile updates, and password changes
@@ -12,9 +12,9 @@ This project implements a complete web application with:
 - **Testing**: 100+ unit, integration, and E2E tests with 80%+ code coverage
 - **Deployment**: Docker containerization and GitHub Actions CI/CD pipeline
 
-## ✨ Key Features Implemented
+## Key Features Implemented
 
-### 1. User Profile Management ✅
+### 1. User Profile Management
 - **Route**: `GET /users/me` - Retrieve current user profile
 - **Route**: `PUT /users/me` - Update profile information
 - Update profile info: username, email, full name, bio
@@ -22,7 +22,7 @@ This project implements a complete web application with:
 - **Tests**: Complete unit, integration, and E2E coverage
 - **UI**: Profile & Security tab with dedicated form
 
-### 2. Secure Password Change ✅
+### 2. Secure Password Change
 - **Route**: `POST /users/change-password`
 - Requires current password verification
 - Validates password strength (min 8 characters)
@@ -31,7 +31,7 @@ This project implements a complete web application with:
 - **Tests**: Security validation tests
 - **UI**: Professional password change form with confirmation
 
-### 3. Advanced Calculation Operations ✅
+### 3. Advanced Calculation Operations
 - **Power (^)**: Exponentiation with any numeric values
 - **Modulo (%)**: Remainder operation with divide-by-zero protection
 - **All 6 Operations**: Add, Subtract, Multiply, Divide, Power, Modulo
@@ -40,7 +40,7 @@ This project implements a complete web application with:
 - **Factory Pattern**: Dynamic operation creation
 - **UI**: Dropdown selection with all operations
 
-### 4. Usage Insights & Analytics Dashboard ✅
+### 4. Usage Insights & Analytics Dashboard
 - **Route**: `GET /calculations/summary`
 - **Total Calculations**: Count of all user calculations
 - **Average Result**: Statistical average of results
@@ -50,17 +50,17 @@ This project implements a complete web application with:
 - **Tests**: Integration tests for summary endpoint
 - **UI**: Professional stat cards with color-coded metrics and icons
 
-## 📊 Complete BREAD Operations
+## Complete BREAD Operations
 
 | Operation | Endpoint | Method | Status |
 |-----------|----------|--------|--------|
-| **Browse** | `/calculations` | GET | ✅ Implemented & Tested |
-| **Read** | `/calculations/{id}` | GET | ✅ Implemented & Tested |
-| **Edit** | `/calculations/{id}` | PUT | ✅ Implemented & Tested |
-| **Add** | `/calculations` | POST | ✅ Implemented & Tested |
-| **Delete** | `/calculations/{id}` | DELETE | ✅ Implemented & Tested |
+| **Browse** | `/calculations` | GET | Implemented & Tested |
+| **Read** | `/calculations/{id}` | GET | Implemented & Tested |
+| **Edit** | `/calculations/{id}` | PUT | Implemented & Tested |
+| **Add** | `/calculations` | POST | Implemented & Tested |
+| **Delete** | `/calculations/{id}` | DELETE | Implemented & Tested |
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 IS601_FinalProject/
@@ -97,7 +97,7 @@ IS601_FinalProject/
 └── README.md                   # This file
 ```
 
-## 🧪 Testing Overview
+## Testing Overview
 
 ### Unit Tests (92 passing)
 - **Security** (11 tests): Password hashing, verification, edge cases
@@ -117,7 +117,7 @@ IS601_FinalProject/
 
 **Total**: 120+ tests | **Coverage**: 80%+
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Python 3.9+
@@ -161,7 +161,7 @@ python -m uvicorn app.main:app --reload
 # Access: http://localhost:8000/static/login.html
 ```
 
-## 🧪 Running Tests
+## Running Tests
 
 ```bash
 # All tests
@@ -177,7 +177,7 @@ pytest tests/ --cov=app --cov-report=html
 pytest tests/test_e2e.py -v
 ```
 
-## 🎨 Frontend Features
+## Frontend Features
 
 ### Modern SaaS-Style Design
 - **Professional navbar** with CalcHub branding
@@ -207,33 +207,33 @@ pytest tests/test_e2e.py -v
 - Form validation and error handling
 - Success/error message notifications
 
-## 🔐 Security Implementation
+## Security Implementation
 
-✅ **Password Security**
+**Password Security**
 - Bcrypt hashing with configurable cost (default: 12)
 - Salt generation per password
 - Password strength validation (min 8 characters)
 - Secure comparison to prevent timing attacks
 
-✅ **Authentication**
+**Authentication**
 - JWT token-based system
 - Automatic token expiration (1 hour)
 - Secure token storage (localStorage)
 - Token refresh mechanism
 
-✅ **Data Protection**
+**Data Protection**
 - Pydantic input validation
 - Email format validation
 - Division/modulo by zero protection
 - SQLAlchemy ORM (SQL injection prevention)
 
-✅ **API Security**
+**API Security**
 - CORS protection
 - Error messages without sensitive info
 - User data isolation (users only see own data)
 - Secure password change verification
 
-## 📦 Docker Deployment
+## Docker Deployment
 
 ### Local Development
 ```bash
@@ -258,7 +258,7 @@ docker run -p 8000:8000 \
   my-calc-app:latest
 ```
 
-## 🔄 CI/CD Pipeline
+## CI/CD Pipeline
 
 **GitHub Actions Workflow** (`.github/workflows/ci-cd.yml`):
 
@@ -273,7 +273,7 @@ docker run -p 8000:8000 \
 - Pull requests
 - Manual workflow dispatch
 
-## 📚 API Documentation
+## API Documentation
 
 ### Interactive Documentation
 - **Swagger UI**: http://localhost:8000/docs
@@ -305,7 +305,7 @@ GET    /calculations/summary        # Get analytics/summary
 GET    /health                      # Health check
 ```
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 **Backend**
 - FastAPI 0.104.1 - Modern async web framework
@@ -332,41 +332,41 @@ GET    /health                      # Health check
 - GitHub Actions
 - PostgreSQL in container
 
-## ✅ Requirements Compliance
+## Requirements Compliance
 
 ### Course Learning Outcomes
-✅ **CLO3**: Python applications with automated testing (120+ tests)
-✅ **CLO4**: GitHub Actions CI/CD pipeline with automated testing and Docker builds
-✅ **CLO9**: Docker containerization with multi-stage builds and Docker Compose
-✅ **CLO10**: REST API design and comprehensive testing with FastAPI
-✅ **CLO11**: SQLAlchemy ORM with PostgreSQL database integration
-✅ **CLO12**: Pydantic serialization, deserialization, and validation
-✅ **CLO13**: Security with JWT, bcrypt hashing, password verification, input validation
+- **CLO3**: Python applications with automated testing (120+ tests)
+- **CLO4**: GitHub Actions CI/CD pipeline with automated testing and Docker builds
+- **CLO9**: Docker containerization with multi-stage builds and Docker Compose
+- **CLO10**: REST API design and comprehensive testing with FastAPI
+- **CLO11**: SQLAlchemy ORM with PostgreSQL database integration
+- **CLO12**: Pydantic serialization, deserialization, and validation
+- **CLO13**: Security with JWT, bcrypt hashing, password verification, input validation
 
 ### Assignment Requirements
-✅ **Feature Selection**: User Profile & Password Change + Advanced Operations + Analytics
-✅ **Backend Development**: SQLAlchemy models, Pydantic schemas, FastAPI routes
-✅ **Frontend Development**: Responsive SaaS-style UI with multiple pages/tabs
-✅ **Testing**: Unit (92), Integration (30), E2E - all passing
-✅ **Docker**: Containerized with docker-compose
-✅ **CI/CD**: GitHub Actions pipeline with automated testing and deployment
-✅ **Documentation**: Comprehensive README with instructions and information
+- **Feature Selection**: User Profile & Password Change + Advanced Operations + Analytics
+- **Backend Development**: SQLAlchemy models, Pydantic schemas, FastAPI routes
+- **Frontend Development**: Responsive SaaS-style UI with multiple pages/tabs
+- **Testing**: Unit (92), Integration (30), E2E - all passing
+- **Docker**: Containerized with docker-compose
+- **CI/CD**: GitHub Actions pipeline with automated testing and deployment
+- **Documentation**: Comprehensive README with instructions and information
 
-## 📋 Completion Checklist
+## Completion Checklist
 
-- ✅ Feature implementation (Profile, Password, Advanced Ops, Analytics)
-- ✅ Backend: FastAPI routes, SQLAlchemy models, Pydantic schemas
-- ✅ Frontend: Responsive SaaS-style UI with tabs
-- ✅ Testing: 120+ tests (unit, integration, E2E)
-- ✅ Docker: Containerization and docker-compose
-- ✅ CI/CD: GitHub Actions pipeline
-- ✅ Deployment: Docker Hub integration
-- ✅ Documentation: Comprehensive README
-- ✅ Code Quality: Clean, organized, commented code
-- ✅ Security: JWT, password hashing, validation
-- ✅ Extra Features: Advanced UI, analytics dashboard, modern design
+- Feature implementation (Profile, Password, Advanced Ops, Analytics)
+- Backend: FastAPI routes, SQLAlchemy models, Pydantic schemas
+- Frontend: Responsive SaaS-style UI with tabs
+- Testing: 120+ tests (unit, integration, E2E)
+- Docker: Containerization and docker-compose
+- CI/CD: GitHub Actions pipeline
+- Deployment: Docker Hub integration
+- Documentation: Comprehensive README
+- Code Quality: Clean, organized, commented code
+- Security: JWT, password hashing, validation
+- Extra Features: Advanced UI, analytics dashboard, modern design
 
-## 📊 Code Quality Metrics
+## Code Quality Metrics
 
 - **Test Coverage**: 80%+
 - **Passing Tests**: 120+ / 120+
@@ -375,7 +375,7 @@ GET    /health                      # Health check
 - **Type Hints**: Used throughout for type safety
 - **Error Handling**: Comprehensive with meaningful messages
 
-## 🎨 Design Highlights
+## Design Highlights
 
 - **Modern Color Scheme**: Indigo primary with complementary colors
 - **Responsive Breakpoints**: Desktop, tablet (768px), mobile (480px)
@@ -384,7 +384,7 @@ GET    /health                      # Health check
 - **Icon System**: Font Awesome for visual enhancement
 - **Typography**: Professional font stack with proper hierarchy
 
-## 🚦 Application Flow
+## Application Flow
 
 ### Authentication Flow
 1. User registers with email/password
@@ -407,7 +407,7 @@ GET    /health                      # Health check
 4. New password hashed and stored
 5. User can re-login with new password
 
-## 📞 Support & Documentation
+## Support & Documentation
 
 **Documentation**
 - README.md - This file
@@ -421,7 +421,7 @@ GET    /health                      # Health check
 **Docker Hub**
 - https://hub.docker.com/r/kk795/secure-fastapi-app
 
-## 📝 Project Timeline
+## Project Timeline
 
 - **Week 1-2**: Feature planning and architecture
 - **Week 3-4**: Backend development and database
@@ -430,7 +430,7 @@ GET    /health                      # Health check
 - **Week 9-10**: Docker and CI/CD setup
 - **Week 11-12**: Documentation and final review
 
-## 🎓 Learning Outcomes Achieved
+## Learning Outcomes Achieved
 
 Through this project, demonstrated proficiency in:
 - Full-stack web development (Python + JavaScript + HTML/CSS)
@@ -443,19 +443,19 @@ Through this project, demonstrated proficiency in:
 - Professional code organization
 - Security best practices
 
-## 📄 License
+## License
 
 Part of IS601 - Advanced Web Application Development at NJIT.
 
-## 👤 Author
+## Author
 
-**Karan Kumar**
+**Kaushik Kumar**
 - GitHub: [@kk795-NJIT](https://github.com/kk795-NJIT)
 - Repository: [IS601_FinalProject](https://github.com/kk795-NJIT/IS601_FinalProject)
 
 ---
 
-**Status**: ✅ Complete and Production-Ready
+**Status**: Complete and Production-Ready
 **Last Updated**: December 9, 2025
 **Docker Hub**: https://hub.docker.com/r/kk795/secure-fastapi-app
 **GitHub**: https://github.com/kk795-NJIT/IS601_FinalProject
